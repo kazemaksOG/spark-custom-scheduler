@@ -57,7 +57,7 @@ private[spark] class Pool(
       case SchedulingMode.CUSTOM if customAlgorithm != null =>
         customAlgorithm
       case SchedulingMode.CUSTOM if customAlgorithm == null =>
-        val msg = s"Custom scheduler class is not defined: null."
+        val msg = s"Custom scheduler algorithm is not defined: null."
         throw new ClassNotFoundException(msg)
       case _ =>
         val msg = s"Unsupported scheduling mode: $schedulingMode. Use FAIR or FIFO instead."

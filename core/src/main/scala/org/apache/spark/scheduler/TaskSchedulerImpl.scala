@@ -243,8 +243,11 @@ private[spark] class TaskSchedulerImpl(
           new FIFOSchedulableBuilder(rootPool)
         case SchedulingMode.FAIR =>
           new FairSchedulableBuilder(rootPool, sc)
-        case SchedulingMode.CUSTOM =>
+        case SchedulingMode.CUSTOM if customSchedulerContainer != null =>
           customSchedulerContainer.getScheduler(rootPool)
+        case SchedulingMode.CUSTOM if customSchedulerContainer == null =>
+          val msg = s"config spark.customSchedulerContainer is not defined."
+          throw new ClassNotFoundException(msg)
         case _ =>
           throw new IllegalArgumentException(s"Unsupported $SCHEDULER_MODE_PROPERTY: " +
           s"$schedulingMode")

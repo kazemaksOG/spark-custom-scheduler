@@ -32,7 +32,8 @@ private[spark] class Pool(
     val poolName: String,
     val schedulingMode: SchedulingMode,
     initMinShare: Int,
-    initWeight: Int)
+    initWeight: Int,
+    customAlgorithm: SchedulingAlgorithm = null)
   extends Schedulable with Logging {
 
   val schedulableQueue = new ConcurrentLinkedQueue[Schedulable]
@@ -53,6 +54,11 @@ private[spark] class Pool(
         new FairSchedulingAlgorithm()
       case SchedulingMode.FIFO =>
         new FIFOSchedulingAlgorithm()
+      case SchedulingMode.CUSTOM if customAlgorithm != null =>
+        customAlgorithm
+      case SchedulingMode.CUSTOM if customAlgorithm == null =>
+        val msg = s"Custom scheduler class is not defined: null."
+        throw new ClassNotFoundException(msg)
       case _ =>
         val msg = s"Unsupported scheduling mode: $schedulingMode. Use FAIR or FIFO instead."
         throw new IllegalArgumentException(msg)

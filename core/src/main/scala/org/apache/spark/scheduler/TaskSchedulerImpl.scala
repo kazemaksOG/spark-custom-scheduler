@@ -191,7 +191,27 @@ private[spark] class TaskSchedulerImpl(
           schedulingModeConf)
     }
 
-  val rootPool: Pool = new Pool("", schedulingMode, 0, 0)
+
+  val customSchedulerContainer: SchedulerContainer = {
+
+    val schedulerName = sc.conf.get("spark.customSchedulerContainer", null)
+    if (schedulerName != null) {
+      Utils.classForName(schedulerName)
+        .getConstructor()
+        .newInstance().asInstanceOf[SchedulerContainer]
+    } else {
+      null
+    }
+  }
+
+
+  val rootPool: Pool = if (customSchedulerContainer != null) {
+    new Pool("", schedulingMode, 0, 0,
+      customSchedulerContainer.getAlgorithm())
+  } else {
+    new Pool("", schedulingMode, 0, 0)
+  }
+
 
   // This is a var so that we can reset it for testing purposes.
   private[spark] var taskResultGetter = new TaskResultGetter(sc.env, this)
@@ -223,6 +243,8 @@ private[spark] class TaskSchedulerImpl(
           new FIFOSchedulableBuilder(rootPool)
         case SchedulingMode.FAIR =>
           new FairSchedulableBuilder(rootPool, sc)
+        case SchedulingMode.CUSTOM =>
+          customSchedulerContainer.getScheduler(rootPool)
         case _ =>
           throw new IllegalArgumentException(s"Unsupported $SCHEDULER_MODE_PROPERTY: " +
           s"$schedulingMode")
